@@ -6,8 +6,8 @@
 <title>행복은 — 우리 반 시집서점</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <style>
   :root{
     --paper:#FAF5EC;
@@ -183,6 +183,9 @@
   </div>
   <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">행복은 ( )</h2>
   <p class="lede">마음에 드는 표현을 3개 이상 적어보세요.</p>
+  <div class="card" style="border-left-color:var(--gold); background:#FFF8E8;">
+    <p style="margin:0; font-size:14px; color:var(--ink-soft);">💡 <b>힌트</b> — 꼭 먹을 것이 아니어도 좋아요! 날씨 · 온도 · 색깔 · 계절 · 소리 · 촉감 · 동물 · 장소 · 사람 · 물건 · 순간 등 뭐든 괜찮아요.</p>
+  </div>
   <div class="card">
     <div id="lines-wrap"></div>
     <button class="btn-ghost" id="add-line-btn" onclick="addLine()" style="margin-top:4px;">+ 문장 추가</button>
@@ -199,11 +202,30 @@
     <button class="link-btn" onclick="showScreen('screen-write')">이전으로</button>
   </div>
   <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">내 행복과 어울리는 그림은?</h2>
-  <p class="lede">전시관을 골라, 가장 잘 어울리는 그림을 하나 골라보세요. 정답은 없어요.</p>
+  <p class="lede">전시관을 골라, 그림을 눌러 크게 살펴본 뒤 골라보세요.</p>
+  <div class="card" style="border-left-color:var(--gold); background:#FFF8E8;">
+    <p style="margin:0; font-size:14px; color:var(--ink-soft);">💡 예쁜 그림이 아니라, <b>내가 쓴 행복의 느낌과 어울리는 그림</b>을 골라보세요. 색깔이나 분위기, 그림 속 장면이 내 시와 통하는 부분이 있는지 살펴보세요.</p>
+  </div>
   <div class="gallery-tabs" id="gallery-tabs"></div>
   <div class="art-grid" id="art-grid"></div>
   <div class="actions">
     <button class="btn-primary" id="gallery-next-btn" disabled onclick="goToPreview()">다음 — 시집 완성하기</button>
+  </div>
+</div>
+
+<!-- 3-1. 그림 크게 보기 + 확정 모달 -->
+<div class="modal-bg" id="art-preview-bg" onclick="closeArtPreviewIfBg(event)">
+  <div class="modal-inner wide">
+    <div class="card" style="text-align:left;">
+      <h3 style="font-family:'Gaegu'; color:var(--wine); font-size:22px; margin-bottom:10px;" id="art-preview-title"></h3>
+      <img id="art-preview-img" src="" alt="" style="width:100%; max-height:52vh; object-fit:contain; background:var(--paper-deep); border-radius:8px;">
+      <div id="art-preview-poem" style="margin-top:16px; text-align:center;"></div>
+      <p class="lede" style="text-align:center; margin-top:12px;">이 그림, 내가 쓴 행복과 어울리나요?</p>
+      <div class="actions" style="justify-content:center;">
+        <button class="btn-primary" id="art-preview-confirm">이 그림으로 하기</button>
+        <button class="btn-ghost" onclick="closeArtPreview()">다른 그림 볼게요</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -531,7 +553,7 @@ function renderLines(){
   state.lines.forEach((val, i)=>{
     const row = document.createElement('div');
     row.className = 'line-row';
-    row.innerHTML = `<span>행복은</span><input type="text" data-idx="${i}" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="예: 붕어빵">`;
+    row.innerHTML = `<span>행복은</span><input type="text" data-idx="${i}" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="자유롭게 적어보세요">`;
     wrap.appendChild(row);
   });
   wrap.querySelectorAll('input').forEach(inp=>{
@@ -570,15 +592,32 @@ function renderArtGrid(){
     const isSel = state.selected && state.selected.file === w.file;
     cardEl.className = 'art-card' + (isSel ? ' selected' : '');
     cardEl.innerHTML = `<img src="${artUrl(w,300)}" alt="${w.title}" loading="lazy"><div class="cap">${w.title}${w.year? ' · '+w.year : ''}</div>`;
-    cardEl.onclick = ()=>{
-      state.selected = { artist: ART[state.gallery].label, title:w.title, year:w.year, file:w.file, local:w.local };
-      renderArtGrid();
-      document.getElementById('gallery-next-btn').disabled = false;
-    };
+    cardEl.onclick = ()=> openArtPreview(w);
     grid.appendChild(cardEl);
   });
   document.getElementById('gallery-next-btn').disabled = !state.selected;
 }
+
+// ---------- 그림 크게 보기 + 확정 ----------
+function openArtPreview(w){
+  const candidate = { artist: ART[state.gallery].label, title:w.title, year:w.year, file:w.file, local:w.local };
+  document.getElementById('art-preview-title').textContent = `${w.title}${w.year? ' · '+w.year : ''} (${ART[state.gallery].label.replace('관','')})`;
+  document.getElementById('art-preview-img').src = artUrl(w, 1200);
+  document.getElementById('art-preview-img').alt = w.title;
+  const poemEl = document.getElementById('art-preview-poem');
+  const filled = state.lines.map(l=>l.trim()).filter(Boolean);
+  poemEl.innerHTML = filled.length
+    ? filled.map(l=>`<div class="stanza" style="font-size:15px; margin-bottom:8px;">행복은 ${l}</div>`).join('')
+    : '';
+  document.getElementById('art-preview-confirm').onclick = ()=>{
+    state.selected = candidate;
+    closeArtPreview();
+    renderArtGrid();
+  };
+  document.getElementById('art-preview-bg').classList.add('active');
+}
+function closeArtPreview(){ document.getElementById('art-preview-bg').classList.remove('active'); }
+function closeArtPreviewIfBg(e){ if(e.target.id==='art-preview-bg') closeArtPreview(); }
 
 // ---------- 4. 시집 렌더/등록 ----------
 function bookHtml(entry){
