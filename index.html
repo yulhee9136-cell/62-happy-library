@@ -115,6 +115,7 @@
   .modal-inner{ max-width:420px; width:100%; max-height:90vh; overflow:auto; text-align:center; }
   .modal-inner.wide{ max-width:720px; }
   .modal-close{ margin-top:14px; }
+  .modal-x-close{ position:fixed; top:18px; right:18px; width:42px; height:42px; border-radius:50%; background:#fff; border:1px solid var(--line); font-size:20px; line-height:1; cursor:pointer; z-index:60; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
   .qr-box{ background:#fff; border-radius:12px; padding:24px; }
   .qr-box img{ width:100%; max-width:340px; }
   .qr-link{ font-size:12px; color:var(--ink-soft); word-break:break-all; margin-top:10px; }
@@ -184,7 +185,7 @@
   <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">행복은 ( )</h2>
   <p class="lede">마음에 드는 표현을 3개 이상 적어보세요.</p>
   <div class="card" style="border-left-color:var(--gold); background:#FFF8E8;">
-    <p style="margin:0; font-size:14px; color:var(--ink-soft);">💡 <b>힌트</b> — 꼭 먹을 것이 아니어도 좋아요! 날씨 · 온도 · 색깔 · 계절 · 소리 · 촉감 · 동물 · 장소 · 사람 · 물건 · 순간 등 뭐든 괜찮아요.</p>
+    <p style="margin:0; font-size:14px; color:var(--ink-soft);">💡 <b>힌트</b> — 날씨 · 온도 · 색깔 · 계절 · 소리 · 촉감 · 동물 · 장소 · 사람 · 물건 · 순간 등 뭐든 괜찮아요. (예: 행복은 천둥번개)</p>
   </div>
   <div class="card">
     <div id="lines-wrap"></div>
@@ -215,6 +216,7 @@
 
 <!-- 3-1. 그림 크게 보기 + 확정 모달 -->
 <div class="modal-bg" id="art-preview-bg" onclick="closeArtPreviewIfBg(event)">
+  <button class="modal-x-close" onclick="closeArtPreview()" aria-label="닫기">✕</button>
   <div class="modal-inner wide">
     <div class="card" style="text-align:left;">
       <h3 style="font-family:'Gaegu'; color:var(--wine); font-size:22px; margin-bottom:10px;" id="art-preview-title"></h3>
@@ -264,6 +266,7 @@
 
 <!-- 상세보기 모달 -->
 <div class="modal-bg" id="modal-bg" onclick="closeModalIfBg(event)">
+  <button class="modal-x-close" onclick="closeModal()" aria-label="닫기">✕</button>
   <div class="modal-inner">
     <div id="modal-book"></div>
     <div id="modal-actions" class="actions" style="justify-content:center;"></div>
