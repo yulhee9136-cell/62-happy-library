@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>행복은 — 우리 반 시집서점</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --paper:#FAF5EC;
+    --paper-deep:#F1E8D8;
+    --ink:#2B2420;
+    --ink-soft:#6B5D4F;
+    --wine:#8B3A4A;
+    --wine-deep:#6E2C39;
+    --gold:#C79A4B;
+    --line: rgba(43,36,32,0.15);
+    --ok:#3F8A5C;
+    --bad:#B3492F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background: var(--paper); color: var(--ink);
+    font-family:'Gowun Dodum', sans-serif; min-height:100vh;
+  }
+  .screen{ display:none; padding: 20px 18px 60px; max-width: 760px; margin:0 auto; }
+  .screen.active{ display:block; }
+  h1,h2,h3{ margin:0; }
+  .eyebrow{ font-size:13px; color: var(--wine); margin-bottom:6px; }
+  .lede{ color: var(--ink-soft); font-size:14px; line-height:1.6; margin-top:8px; }
+
+  #status-banner{ display:none; position:sticky; top:0; z-index:100; padding:10px 16px; font-size:14px; text-align:center; font-weight:700; }
+  #status-banner.show{ display:block; }
+  #status-banner.info{ background:#FFF3D6; color:#8A6A1F; }
+  #status-banner.ok{ background:#E4F3E9; color:var(--ok); }
+  #status-banner.bad{ background:#FBE6E1; color:var(--bad); }
+
+  .card{ background:#fff; border:1px solid var(--line); border-left:4px solid var(--wine); padding:20px 18px; margin-top:18px; border-radius:4px; }
+
+  input[type=text], input[type=tel]{
+    width:100%; font-family:'Gowun Batang', serif; font-size:20px; letter-spacing:2px;
+    padding:12px 10px; border:none; border-bottom:2px solid var(--line); background:transparent;
+    color:var(--ink); outline:none; text-align:center;
+  }
+  input[type=text]:focus, input[type=tel]:focus{ border-bottom-color: var(--wine); }
+  .line-row input{ text-align:left; letter-spacing:normal; font-size:17px; }
+
+  .line-row{ display:flex; align-items:baseline; gap:10px; margin:12px 0; font-family:'Gowun Batang', serif; font-size:17px; }
+  .line-row span{ white-space:nowrap; color: var(--ink); }
+  .line-row input{ flex:1; }
+
+  button{ font-family:'Gowun Dodum', sans-serif; font-weight:700; font-size:15px; padding:12px 20px; border:none; cursor:pointer; border-radius:8px; }
+  .btn-primary{ background: var(--wine); color:#fff; }
+  .btn-primary:hover{ background: var(--wine-deep); }
+  .btn-primary:disabled{ background:#C9BFAE; cursor:not-allowed; }
+  .btn-ghost{ background:transparent; color: var(--ink-soft); border:1px solid var(--line); }
+  .btn-ghost:hover{ border-color: var(--ink-soft); }
+  .btn-danger{ background:#fff; color:var(--bad); border:1px solid var(--bad); }
+  .actions{ display:flex; gap:12px; margin-top:22px; flex-wrap:wrap; }
+
+  .gallery-tabs{ display:flex; gap:8px; margin-top:18px; flex-wrap:wrap; }
+  .gallery-tab{ padding:8px 15px; border:1px solid var(--line); background:#fff; border-radius:20px; font-size:13px; cursor:pointer; color:var(--ink-soft); font-family:'Gowun Dodum'; }
+  .gallery-tab.on{ background: var(--wine); color:#fff; border-color:var(--wine); }
+  .art-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:16px; }
+  .art-card{ border:2px solid transparent; cursor:pointer; position:relative; background:#fff; padding:5px; border-radius:8px; transition: border-color .15s; }
+  .art-card img{ width:100%; height:100px; object-fit:cover; display:block; border-radius:4px; }
+  .art-card .cap{ font-size:10.5px; color: var(--ink-soft); margin-top:5px; line-height:1.3; }
+  .art-card.selected{ border-color: var(--wine); }
+  .art-card.selected::after{ content:"✓"; position:absolute; top:6px; right:6px; background: var(--wine); color:#fff; font-size:12px; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+
+  /* 시집 펼침면 */
+  .book-wrap{ display:flex; justify-content:center; margin-top:22px; }
+  .book-spread{ width: min(94vw, 680px); min-height:340px; display:grid; grid-template-columns:1fr 1fr; background:#fffdf9; border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 0 rgba(43,36,32,.05), 0 10px 24px rgba(43,36,32,.08); overflow:hidden; }
+  .book-left{ padding:30px 28px; border-right:1px dashed var(--line); display:flex; flex-direction:column; }
+  .book-title{ font-family:'Gaegu', sans-serif; font-weight:700; font-size:30px; color:var(--wine); text-align:left; }
+  .book-author{ font-family:'Gowun Dodum'; font-size:14px; color:var(--ink-soft); text-align:right; margin-top:8px; padding-bottom:14px; border-bottom:1px dashed var(--line); }
+  .book-poem{ margin-top:22px; flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .stanza{ font-family:'Gowun Batang', serif; font-size:17px; color:var(--ink); text-align:center; margin-bottom:18px; line-height:1.5; }
+  .book-right{ background: var(--paper-deep); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .book-right img{ max-width:100%; max-height:100%; object-fit:contain; display:block; }
+  @media (max-width:560px){
+    .book-spread{ grid-template-columns:1fr; }
+    .book-left{ border-right:none; border-bottom:1px dashed var(--line); }
+    .book-right{ min-height:220px; }
+  }
+  .art-credit{ font-size:11px; color: var(--ink-soft); margin-top:10px; text-align:center; }
+
+  /* 로그인 */
+  .code-confirm-name{ font-family:'Gaegu'; font-size:34px; color:var(--wine); text-align:center; margin:18px 0 4px; }
+
+  /* 서점 (책장) */
+  .store-header{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; }
+  .shelf-wrap{ margin-top:22px; background:#EFDFC4; border-radius:10px; padding:18px 16px 6px; }
+  .shelf-grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    grid-auto-rows: 208px; column-gap:8px;
+    background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 186px, #C9A877 186px, #B8926A 200px, transparent 200px, transparent 208px);
+  }
+  .spine{
+    align-self:end; height:186px; border-radius:6px 6px 3px 3px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    padding:12px 4px; box-shadow: inset -6px 0 10px rgba(0,0,0,0.12), 0 3px 4px rgba(0,0,0,0.15);
+    position:relative;
+  }
+  .spine .spine-title{ font-family:'Gaegu'; font-weight:700; font-size:15px; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.15); }
+  .spine .spine-name{ font-family:'Gowun Dodum'; font-size:11px; color:rgba(255,255,255,0.92); margin-top:8px; text-align:center; word-break:keep-all; }
+  .spine .spine-badge{ position:absolute; top:6px; right:6px; font-size:10px; background:rgba(255,255,255,0.85); color:var(--wine-deep); border-radius:8px; padding:1px 5px; font-weight:700; }
+  .empty-note{ color: var(--ink-soft); font-size:14px; margin-top:18px; }
+
+  .modal-bg{ display:none; position:fixed; inset:0; background:rgba(20,16,13,0.6); align-items:center; justify-content:center; padding:20px; z-index:50; }
+  .modal-bg.active{ display:flex; }
+  .modal-inner{ max-width:420px; width:100%; max-height:90vh; overflow:auto; text-align:center; }
+  .modal-inner.wide{ max-width:720px; }
+  .modal-close{ margin-top:14px; }
+  .qr-box{ background:#fff; border-radius:12px; padding:24px; }
+  .qr-box img{ width:100%; max-width:340px; }
+  .qr-link{ font-size:12px; color:var(--ink-soft); word-break:break-all; margin-top:10px; }
+
+  .top-nav{ display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .link-btn{ background:none; border:none; color: var(--ink-soft); font-size:13px; cursor:pointer; text-decoration:underline; padding:0; }
+  .step-indicator{ font-size:12px; color: var(--ink-soft); }
+
+  .mybooks{ margin-top:16px; }
+  .mybook-row{ display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 14px; margin-bottom:8px; }
+  .mybook-row .t{ font-family:'Gaegu'; font-weight:700; color:var(--wine); }
+
+  .presence-wrap{ margin-top:16px; }
+  .presence-chip{ display:inline-block; background:#E4F3E9; color:var(--ok); border-radius:14px; padding:5px 12px; font-size:13px; margin:0 6px 6px 0; }
+</style>
+</head>
+<body>
+
+<div id="status-banner"></div>
+
+<!-- 0. 접속코드 입력 -->
+<div class="screen active" id="screen-code">
+  <div class="eyebrow">국어 · 시와 이야기로 표현해요</div>
+  <h1 style="font-family:'Gaegu'; font-size:36px; color:var(--wine);">행복은</h1>
+  <p class="lede">선생님이 알려주신 접속코드를 입력해주세요.</p>
+  <div class="card">
+    <input type="tel" id="input-code" placeholder="0000" maxlength="4" inputmode="numeric">
+    <div class="actions" style="justify-content:center;">
+      <button class="btn-primary" onclick="checkCode()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 0-1. 본인 확인 -->
+<div class="screen" id="screen-confirm">
+  <div class="card" style="text-align:center;">
+    <p class="lede" style="margin-top:0;">이 접속코드는</p>
+    <div class="code-confirm-name" id="confirm-name">-</div>
+    <p class="lede">님의 코드가 맞나요?</p>
+    <div class="actions" style="justify-content:center;">
+      <button class="btn-primary" onclick="confirmYes()">예, 맞아요</button>
+      <button class="btn-ghost" onclick="confirmNo()">아니오</button>
+    </div>
+  </div>
+</div>
+
+<!-- 1. 로그인 후 랜딩 -->
+<div class="screen" id="screen-landing">
+  <div class="top-nav">
+    <span class="step-indicator" id="landing-greeting"></span>
+    <button class="link-btn" onclick="logout()">로그아웃</button>
+  </div>
+  <h1 style="font-family:'Gaegu'; font-size:32px; color:var(--wine); margin-top:8px;">행복은</h1>
+  <p class="lede">나태주 시인의 「사랑은」을 빌려, 나만의 "행복은"을 완성해봐요.</p>
+
+  <div class="card" id="landing-card">
+    <div id="landing-body"></div>
+  </div>
+</div>
+
+<!-- 2. 행복은 ( ) 입력 -->
+<div class="screen" id="screen-write">
+  <div class="top-nav">
+    <span class="step-indicator">1 / 3 · 행복은</span>
+    <button class="link-btn" onclick="showScreen('screen-landing')">처음으로</button>
+  </div>
+  <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">행복은 ( )</h2>
+  <p class="lede">마음에 드는 표현을 3개 이상 적어보세요.</p>
+  <div class="card">
+    <div id="lines-wrap"></div>
+    <button class="btn-ghost" id="add-line-btn" onclick="addLine()" style="margin-top:4px;">+ 문장 추가</button>
+    <div class="actions">
+      <button class="btn-primary" onclick="goToGallery()">다음 — 그림 고르기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 갤러리 -->
+<div class="screen" id="screen-gallery">
+  <div class="top-nav">
+    <span class="step-indicator">2 / 3 · 그림 고르기</span>
+    <button class="link-btn" onclick="showScreen('screen-write')">이전으로</button>
+  </div>
+  <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">내 행복과 어울리는 그림은?</h2>
+  <p class="lede">전시관을 골라, 가장 잘 어울리는 그림을 하나 골라보세요. 정답은 없어요.</p>
+  <div class="gallery-tabs" id="gallery-tabs"></div>
+  <div class="art-grid" id="art-grid"></div>
+  <div class="actions">
+    <button class="btn-primary" id="gallery-next-btn" disabled onclick="goToPreview()">다음 — 시집 완성하기</button>
+  </div>
+</div>
+
+<!-- 4. 미리보기 -->
+<div class="screen" id="screen-preview">
+  <div class="top-nav">
+    <span class="step-indicator">3 / 3 · 시집 완성</span>
+    <button class="link-btn" onclick="showScreen('screen-gallery')">이전으로</button>
+  </div>
+  <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">이렇게 시집이 완성돼요</h2>
+  <div id="preview-book"></div>
+  <div class="actions" style="justify-content:center;">
+    <button class="btn-ghost" onclick="showScreen('screen-write')">다시 쓰기</button>
+    <button class="btn-primary" id="register-btn" onclick="registerBook()">등록하고 서점 열기</button>
+  </div>
+</div>
+
+<!-- 5. 시집서점 -->
+<div class="screen" id="screen-store">
+  <div class="store-header">
+    <div>
+      <div class="eyebrow">우리 반 시집서점</div>
+      <h1 style="font-family:'Gaegu'; font-size:28px; color:var(--wine);">함께 쓴 「행복은」</h1>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn-ghost" onclick="showQR()">📱 QR 띄우기</button>
+      <button class="btn-ghost" onclick="loadStore()">새로고침</button>
+      <button class="btn-primary" onclick="showScreen('screen-landing')">내 화면으로</button>
+    </div>
+  </div>
+  <div class="shelf-wrap">
+    <div class="shelf-grid" id="store-grid"></div>
+  </div>
+  <div class="empty-note" id="store-empty" style="display:none;"></div>
+</div>
+
+<!-- 상세보기 모달 -->
+<div class="modal-bg" id="modal-bg" onclick="closeModalIfBg(event)">
+  <div class="modal-inner">
+    <div id="modal-book"></div>
+    <div id="modal-actions" class="actions" style="justify-content:center;"></div>
+    <div style="text-align:center;">
+      <button class="btn-ghost modal-close" onclick="closeModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR 모달 -->
+<div class="modal-bg" id="qr-modal-bg" onclick="closeQrIfBg(event)">
+  <div class="modal-inner">
+    <div class="qr-box">
+      <h2 style="font-family:'Gaegu'; color:var(--wine); font-size:26px;">여기로 접속하세요!</h2>
+      <img id="qr-img" src="" alt="QR 코드">
+      <div class="qr-link" id="qr-link"></div>
+    </div>
+    <div style="text-align:center; margin-top:14px;">
+      <button class="btn-ghost" onclick="closeQr()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal-bg" id="confirm-modal-bg">
+  <div class="modal-inner">
+    <div class="card" style="text-align:center;">
+      <p class="lede" style="margin-top:0; font-size:16px;" id="confirm-modal-text">정말 삭제할까요?</p>
+      <div class="actions" style="justify-content:center;">
+        <button class="btn-danger" id="confirm-modal-yes">삭제</button>
+        <button class="btn-ghost" onclick="closeConfirmModal()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Firebase 초기화 ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyAfiyFuGadCypy-Yn1xgob6yCGyNg0_R6M",
+  authDomain: "happy-library-269d6.firebaseapp.com",
+  databaseURL: "https://happy-library-269d6-default-rtdb.firebaseio.com",
+  projectId: "happy-library-269d6",
+  storageBucket: "happy-library-269d6.firebasestorage.app",
+  messagingSenderId: "1088280762466",
+  appId: "1:1088280762466:web:5cabc8506a6feceda5593b"
+};
+let db = null;
+try{
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+}catch(e){ console.error('Firebase 초기화 실패', e); }
+
+function hasStorage(){ return db !== null; }
+
+// ---------- 상태 표시 ----------
+function showStatus(msg, type, autoHideMs){
+  const el = document.getElementById('status-banner');
+  el.textContent = msg;
+  el.className = 'show ' + (type||'info');
+  if(autoHideMs){
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(()=>{ el.classList.remove('show'); }, autoHideMs);
+  }
+}
+window.addEventListener('DOMContentLoaded', ()=>{
+  if(!hasStorage()){
+    showStatus('⚠️ 데이터베이스 연결에 실패했어요. 인터넷 연결을 확인하고 새로고침해주세요.', 'bad');
+  }
+});
+
+// ---------- 접속코드 표 ----------
+const CODES = {
+  "6200":"교사",
+  "6201":"김경민", "6202":"김용희", "6203":"김채민", "6204":"라지브", "6205":"발레리야",
+  "6206":"박인학", "6207":"선은서", "6208":"안나래", "6209":"안시헌", "6210":"유예서",
+  "6211":"이지석", "6212":"정우진", "6213":"정현우", "6214":"조아미르", "6215":"최선우",
+  "6216":"함영채", "6217":"허준호", "6218":"홍다희", "6219":"홍승아", "6220":"어민성",
+  "6221":"예비용1","6222":"예비용2","6223":"예비용3","6224":"예비용4","6225":"예비용5",
+  "6226":"예비용6","6227":"예비용7","6228":"예비용8","6229":"예비용9","6230":"예비용10",
+  "6231":"예비용11","6232":"예비용12","6233":"예비용13","6234":"예비용14","6235":"예비용15",
+  "6236":"예비용16","6237":"예비용17","6238":"예비용18","6239":"예비용19","6240":"예비용20"
+};
+const TEACHER_CODE = "6200";
+
+// ---------- 데이터 : 화가별 로컬 이미지 ----------
+const ART = {
+  renoir: { label:'르누아르관', works: [
+    { title:'테라스에서 (두 자매)', year:'1881', local:true, file:"renoir_1_two_sisters.png" },
+    { title:'물랭 드 라 갈레트의 무도회', year:'1876', local:true, file:"renoir_2_bal_moulin.png" },
+    { title:'정원의 파라솔을 든 여인', year:'1875', local:true, file:"renoir_3_woman_parasol_garden.png" },
+    { title:'잔느 사마리의 초상', year:'1877', local:true, file:"renoir_4_jeanne_samary.png" },
+    { title:'복숭아 정물', year:'1881', local:true, file:"renoir_5_peaches.png" },
+    { title:'장미가 담긴 화병', year:'', local:true, file:"renoir_6_roses.png" },
+    { title:'물뿌리개를 든 소녀', year:'1876', local:true, file:"renoir_7_girl_watering_can.png" },
+  ]},
+  monet: { label:'모네관', works: [
+    { title:'양산을 든 여인 (모네 부인과 아들)', year:'1875', local:true, file:"monet_1_woman_parasol.png" },
+    { title:'인상, 해돋이', year:'1872', local:true, file:"monet_2_impression_sunrise.png" },
+    { title:'수련', year:'', local:true, file:"monet_3_water_lilies.png" },
+    { title:'수련 연못 (일본식 다리)', year:'1899', local:true, file:"monet_4_japanese_bridge.png" },
+    { title:'양귀비 들판', year:'1873', local:true, file:"monet_5_poppy_field.png" },
+    { title:'튤립 밭과 풍차', year:'1886', local:true, file:"monet_6_tulip_windmill.png" },
+    { title:'에트르타 절벽의 일몰', year:'1883', local:true, file:"monet_7_etretat_sunset.png" },
+  ]},
+  vangogh: { label:'고흐관', works: [
+    { title:'밤의 카페 테라스', year:'1888', local:true, file:"gogh_1_cafe_terrace.png" },
+    { title:'해바라기', year:'1888', local:true, file:"gogh_2_sunflowers.png" },
+    { title:'아를의 침실', year:'1889', local:true, file:"gogh_3_bedroom.png" },
+    { title:'오베르의 교회', year:'1890', local:true, file:"gogh_4_church_auvers.png" },
+    { title:'별이 빛나는 밤', year:'1889', local:true, file:"gogh_5_starry_night.png" },
+    { title:'씨 뿌리는 사람', year:'1888', local:true, file:"gogh_6_the_sower.png" },
+    { title:'사이프러스가 있는 밀밭', year:'1889', local:true, file:"gogh_7_wheatfield_cypresses.png" },
+  ]}
+};
+function artUrl(work, width){
+  if(work && work.local) return `images/${work.file}`;
+  const file = (work && work.file) ? work.file : work;
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${width||900}`;
+}
+const SPINE_COLORS = ["#C1585F","#4F7CA6","#5C9C6E","#B8894A","#8C6BB1","#4A9C9C","#C67A9E","#7A8B4A"];
+function spineColorFor(id){
+  let h = 0;
+  for(const ch of String(id)) h = (h*31 + ch.charCodeAt(0)) % 100000;
+  return SPINE_COLORS[h % SPINE_COLORS.length];
+}
+
+// ---------- 세션/상태 ----------
+let session = null; // { code, name, isTeacher }
+let pendingCode = null;
+let state = { name:'', lines:['','',''], gallery:'renoir', selected:null, editingId:null };
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ---------- 0. 접속코드 ----------
+function checkCode(){
+  const code = document.getElementById('input-code').value.trim();
+  if(!/^\d{4}$/.test(code)){ showStatus('4자리 숫자 코드를 입력해주세요.', 'bad', 2500); return; }
+  const name = CODES[code];
+  if(!name){ showStatus('등록되지 않은 코드예요. 다시 확인해주세요.', 'bad', 3000); return; }
+  pendingCode = code;
+  document.getElementById('confirm-name').textContent = name;
+  showScreen('screen-confirm');
+}
+function confirmYes(){
+  const code = pendingCode;
+  session = { code, name: CODES[code], isTeacher: code === TEACHER_CODE };
+  document.getElementById('input-code').value = '';
+  startHeartbeat();
+  renderLanding();
+  showScreen('screen-landing');
+}
+function confirmNo(){
+  pendingCode = null;
+  document.getElementById('input-code').value = '';
+  showScreen('screen-code');
+}
+function logout(){
+  session = null;
+  if(window._heartbeatTimer){ clearInterval(window._heartbeatTimer); window._heartbeatTimer = null; }
+  if(window._presenceRecheck){ clearInterval(window._presenceRecheck); window._presenceRecheck = null; }
+  if(hasStorage()) db.ref('presence').off();
+  showScreen('screen-code');
+}
+
+// ---------- 실시간 접속 표시 (heartbeat) ----------
+async function sendHeartbeat(){
+  if(!session || !hasStorage()) return;
+  try{
+    await db.ref('presence/' + session.code).set({ name: session.name, code: session.code, ts: Date.now() });
+  }catch(e){ /* 조용히 무시 - 접속표시는 부가기능이라 실패해도 앱 사용에 지장 없게 함 */ }
+}
+function startHeartbeat(){
+  sendHeartbeat();
+  if(window._heartbeatTimer) clearInterval(window._heartbeatTimer);
+  window._heartbeatTimer = setInterval(sendHeartbeat, 15000);
+}
+function renderPresenceList(data){
+  const el = document.getElementById('presence-list');
+  if(!el) return;
+  const now = Date.now();
+  const online = Object.values(data||{}).filter(p => p.code !== TEACHER_CODE && (now - p.ts) < 40000);
+  online.sort((a,b)=> a.name.localeCompare(b.name, 'ko'));
+  const countEl = document.getElementById('presence-count');
+  if(countEl) countEl.textContent = online.length;
+  el.innerHTML = online.length
+    ? online.map(p=>`<span class="presence-chip">${p.name}</span>`).join('')
+    : '<span class="lede">아직 접속한 학생이 없어요.</span>';
+}
+function attachPresenceListener(){
+  if(!hasStorage()) return;
+  db.ref('presence').off();
+  db.ref('presence').on('value', snap => renderPresenceList(snap.val()));
+  if(window._presenceRecheck) clearInterval(window._presenceRecheck);
+  // 40초 창을 벗어난 학생을 걸러내기 위해 주기적으로 다시 그려줌 (실시간 이벤트가 없어도 갱신)
+  window._presenceRecheck = setInterval(()=>{
+    db.ref('presence').once('value').then(snap => renderPresenceList(snap.val()));
+  }, 10000);
+}
+
+// ---------- 1. 랜딩 ----------
+async function renderLanding(){
+  document.getElementById('landing-greeting').textContent = `${session.name}님으로 접속 중` + (session.isTeacher? ' (교사)' : '');
+  const body = document.getElementById('landing-body');
+  body.innerHTML = '불러오는 중...';
+
+  if(session.isTeacher){
+    body.innerHTML = `
+      <h3 style="font-size:16px;">교사 모드</h3>
+      <p class="lede">시집서점에서 모든 학생의 작품을 수정·삭제할 수 있어요. 예시로 직접 시를 써볼 수도 있어요.</p>
+      <div class="actions">
+        <button class="btn-primary" onclick="startWriting()">나도 시 써보기</button>
+        <button class="btn-ghost" onclick="goToStore()">시집서점 열기</button>
+      </div>
+      <div class="presence-wrap">
+        <h3 style="font-size:15px; margin-bottom:6px;">🟢 실시간 접속 중인 학생 (<span id="presence-count">0</span>명)</h3>
+        <div id="presence-list"><span class="lede">불러오는 중...</span></div>
+      </div>
+    `;
+    attachPresenceListener();
+    return;
+  }
+
+  let myBooks = [];
+  if(hasStorage()){
+    try{
+      const snap = await db.ref('books').once('value');
+      const all = snap.val() || {};
+      myBooks = Object.values(all).filter(entry => entry.code === session.code);
+    }catch(e){ console.error(e); }
+  }
+  myBooks.sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+
+  let html = '';
+  if(myBooks.length > 0){
+    html += `<h3 style="font-size:16px;">내 작품 (${myBooks.length}/2)</h3><div class="mybooks">`;
+    myBooks.forEach(entry=>{
+      html += `<div class="mybook-row"><span class="t">행복은 — ${entry.name}</span>
+        <button class="btn-ghost" onclick='startEdit(${JSON.stringify(entry.id)})'>수정</button></div>`;
+    });
+    html += `</div>`;
+  }
+  if(myBooks.length < 2){
+    html += `<div class="actions"><button class="btn-primary" onclick="startWriting()">${myBooks.length===0? '시작하기' : '새 작품 쓰기'}</button>
+      <button class="btn-ghost" onclick="goToStore()">시집서점 구경하기</button></div>`;
+  }else{
+    html += `<p class="lede">이미 작품을 2개 등록했어요. 위에서 수정하거나, 서점을 구경해보세요.</p>
+      <div class="actions"><button class="btn-ghost" onclick="goToStore()">시집서점 구경하기</button></div>`;
+  }
+  body.innerHTML = html;
+  window._myBooksCache = myBooks;
+}
+
+function startWriting(){
+  state = { name: session.name, lines:['','',''], gallery:'renoir', selected:null, editingId:null };
+  renderLines();
+  showScreen('screen-write');
+}
+async function startEdit(id){
+  const entry = (window._myBooksCache||[]).find(b=>b.id===id) || await fetchBookById(id);
+  if(!entry){ showStatus('작품을 찾을 수 없어요.', 'bad', 2500); return; }
+  state = { name: entry.name, lines: entry.lines.slice(), gallery: (entry.art.file && entry.art.artist) ? guessGalleryKey(entry.art) : 'renoir', selected: entry.art, editingId: entry.id };
+  renderLines();
+  showScreen('screen-write');
+}
+function guessGalleryKey(art){
+  for(const key of Object.keys(ART)){
+    if(ART[key].works.some(w=>w.file === art.file)) return key;
+  }
+  return 'renoir';
+}
+async function fetchBookById(id){
+  try{
+    const snap = await db.ref('books/' + id).once('value');
+    return snap.val();
+  }catch(e){ return null; }
+}
+
+// ---------- 2. 행복은 ( ) 입력 ----------
+function renderLines(){
+  const wrap = document.getElementById('lines-wrap');
+  wrap.innerHTML = '';
+  state.lines.forEach((val, i)=>{
+    const row = document.createElement('div');
+    row.className = 'line-row';
+    row.innerHTML = `<span>행복은</span><input type="text" data-idx="${i}" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="예: 붕어빵">`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{ state.lines[+e.target.dataset.idx] = e.target.value; });
+  });
+  document.getElementById('add-line-btn').style.display = state.lines.length >= 4 ? 'none' : 'inline-block';
+}
+function addLine(){ if(state.lines.length>=4) return; state.lines.push(''); renderLines(); }
+
+function goToGallery(){
+  const filled = state.lines.map(l=>l.trim()).filter(Boolean);
+  if(filled.length < 3){ showStatus('행복은 ___ 을(를) 3개 이상 적어주세요.', 'bad', 2500); return; }
+  state.lines = filled;
+  renderGalleryTabs();
+  renderArtGrid();
+  showScreen('screen-gallery');
+}
+
+// ---------- 3. 갤러리 ----------
+function renderGalleryTabs(){
+  const tabs = document.getElementById('gallery-tabs');
+  tabs.innerHTML = '';
+  Object.keys(ART).forEach(key=>{
+    const btn = document.createElement('button');
+    btn.className = 'gallery-tab' + (state.gallery===key ? ' on' : '');
+    btn.textContent = ART[key].label;
+    btn.onclick = ()=>{ state.gallery = key; renderGalleryTabs(); renderArtGrid(); };
+    tabs.appendChild(btn);
+  });
+}
+function renderArtGrid(){
+  const grid = document.getElementById('art-grid');
+  grid.innerHTML = '';
+  ART[state.gallery].works.forEach(w=>{
+    const cardEl = document.createElement('div');
+    const isSel = state.selected && state.selected.file === w.file;
+    cardEl.className = 'art-card' + (isSel ? ' selected' : '');
+    cardEl.innerHTML = `<img src="${artUrl(w,300)}" alt="${w.title}" loading="lazy"><div class="cap">${w.title}${w.year? ' · '+w.year : ''}</div>`;
+    cardEl.onclick = ()=>{
+      state.selected = { artist: ART[state.gallery].label, title:w.title, year:w.year, file:w.file, local:w.local };
+      renderArtGrid();
+      document.getElementById('gallery-next-btn').disabled = false;
+    };
+    grid.appendChild(cardEl);
+  });
+  document.getElementById('gallery-next-btn').disabled = !state.selected;
+}
+
+// ---------- 4. 시집 렌더/등록 ----------
+function bookHtml(entry){
+  const imgUrl = artUrl(entry.art, 900);
+  return `
+    <div class="book-wrap">
+      <div class="book-spread">
+        <div class="book-left">
+          <div class="book-title">행복은</div>
+          <div class="book-author">${entry.name}</div>
+          <div class="book-poem">${entry.lines.map(l=>`<div class="stanza">행복은 ${l}</div>`).join('')}</div>
+        </div>
+        <div class="book-right"><img src="${imgUrl}" alt="${entry.art.title}"></div>
+      </div>
+    </div>
+    <div class="art-credit">🎨 ${entry.art.artist.replace('관','')} · ${entry.art.title}${entry.art.year? ' ('+entry.art.year+')' : ''} — ${entry.art.local? '학급 제공 이미지' : 'Public Domain, Wikimedia Commons'}</div>
+  `;
+}
+function goToPreview(){
+  document.getElementById('preview-book').innerHTML = bookHtml({name: state.name, lines: state.lines, art: state.selected});
+  document.getElementById('register-btn').textContent = state.editingId ? '수정 완료' : '등록하고 서점 열기';
+  showScreen('screen-preview');
+}
+
+async function registerBook(){
+  if(!hasStorage()){ showStatus('⚠️ 데이터베이스에 연결되어 있지 않아요.', 'bad'); return; }
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true;
+  showStatus(state.editingId ? '수정하는 중...' : '등록하는 중...', 'info');
+  try{
+    const id = state.editingId || (Date.now() + '_' + Math.random().toString(36).slice(2,7));
+    let originalTs = Date.now();
+    if(state.editingId){
+      const prev = await fetchBookById(id);
+      if(prev && prev.ts) originalTs = prev.ts;
+    }
+    const entry = {
+      id, name: state.name, code: session.code,
+      lines: state.lines, art: state.selected,
+      ts: originalTs,
+      updatedTs: Date.now()
+    };
+    await db.ref('books/' + id).set(entry);
+    showStatus(state.editingId ? '수정 완료!' : '등록 완료! 시집서점을 열게요.', 'ok', 2500);
+    state.editingId = null;
+    showScreen('screen-store');
+    goToStore();
+  }catch(err){
+    console.error(err);
+    showStatus('오류: ' + (err && err.message ? err.message : String(err)), 'bad');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+// ---------- 5. 서점 (책장) ----------
+function goToStore(){
+  showScreen('screen-store');
+  attachStoreListener();
+}
+
+function attachStoreListener(){
+  if(!hasStorage()){
+    document.getElementById('store-grid').innerHTML = '';
+    const emptyNote = document.getElementById('store-empty');
+    emptyNote.style.display = 'block';
+    emptyNote.textContent = '⚠️ 데이터베이스에 연결되어 있지 않아요.';
+    return;
+  }
+  document.getElementById('store-grid').innerHTML = '<div class="empty-note">불러오는 중...</div>';
+  db.ref('books').off();
+  db.ref('books').on('value', snap => renderShelf(snap.val() || {}), err => {
+    console.error(err);
+    showStatus('실시간 연결 오류: ' + err.message, 'bad');
+  });
+}
+// 수동 새로고침 버튼용 (실시간 리스너가 이미 붙어있지만, 즉시 재확인하고 싶을 때)
+function loadStore(){
+  if(!hasStorage()) return Promise.resolve();
+  return db.ref('books').once('value').then(snap => renderShelf(snap.val() || {}));
+}
+
+function renderShelf(all){
+  const grid = document.getElementById('store-grid');
+  const emptyNote = document.getElementById('store-empty');
+  const entries = Object.values(all);
+  if(entries.length === 0){
+    grid.innerHTML = '';
+    emptyNote.style.display = 'block';
+    emptyNote.textContent = '아직 등록된 시집이 없어요. 첫 번째 시를 써볼까요?';
+    return;
+  }
+  emptyNote.style.display = 'none';
+  entries.sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  grid.innerHTML = '';
+  entries.forEach(entry=>{
+    const spine = document.createElement('div');
+    spine.className = 'spine';
+    spine.style.background = spineColorFor(entry.id);
+    const mine = session && !session.isTeacher && entry.code === session.code;
+    spine.innerHTML = `
+      <div class="spine-title">행복은</div>
+      <div class="spine-name">${entry.name}</div>
+      ${mine ? '<div class="spine-badge">내 작품</div>' : ''}
+    `;
+    spine.onclick = ()=> openModal(entry);
+    grid.appendChild(spine);
+  });
+}
+
+function openModal(entry){
+  document.getElementById('modal-book').innerHTML = bookHtml(entry);
+  const actionsEl = document.getElementById('modal-actions');
+  actionsEl.innerHTML = '';
+  const canEdit = session && (session.isTeacher || entry.code === session.code);
+  if(canEdit){
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-primary';
+    editBtn.textContent = '수정하기';
+    editBtn.onclick = ()=>{ closeModal(); startEditFromStore(entry); };
+    actionsEl.appendChild(editBtn);
+  }
+  if(session && session.isTeacher){
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-danger';
+    delBtn.textContent = '삭제하기';
+    delBtn.onclick = ()=> askDelete(entry);
+    actionsEl.appendChild(delBtn);
+  }
+  document.getElementById('modal-bg').classList.add('active');
+}
+function startEditFromStore(entry){
+  state = { name: entry.name, lines: entry.lines.slice(), gallery: guessGalleryKey(entry.art), selected: entry.art, editingId: entry.id };
+  renderLines();
+  showScreen('screen-write');
+}
+function closeModal(){ document.getElementById('modal-bg').classList.remove('active'); }
+function closeModalIfBg(e){ if(e.target.id==='modal-bg') closeModal(); }
+
+// ---------- 삭제 확인 (커스텀 모달, confirm() 미사용) ----------
+function askDelete(entry){
+  document.getElementById('confirm-modal-text').textContent = `"${entry.name}"님의 작품을 완전히 삭제할까요? 되돌릴 수 없어요.`;
+  const yesBtn = document.getElementById('confirm-modal-yes');
+  yesBtn.onclick = async ()=>{
+    closeConfirmModal();
+    try{
+      await db.ref('books/' + entry.id).remove();
+      showStatus('삭제했어요.', 'ok', 2000);
+      closeModal();
+    }catch(e){
+      console.error(e);
+      showStatus('삭제 중 오류가 발생했어요.', 'bad');
+    }
+  };
+  document.getElementById('confirm-modal-bg').classList.add('active');
+}
+function closeConfirmModal(){ document.getElementById('confirm-modal-bg').classList.remove('active'); }
+
+// ---------- QR ----------
+function showQR(){
+  const url = window.location.href;
+  const isRealUrl = /^https?:\/\//i.test(url);
+  const box = document.querySelector('#qr-modal-bg .qr-box');
+  if(!isRealUrl){
+    box.innerHTML = `
+      <h2 style="font-family:'Gaegu'; color:var(--wine); font-size:24px;">아직은 QR을 만들 수 없어요</h2>
+      <p class="lede" style="text-align:left;">지금 이 화면은 실제 인터넷 주소가 없는 미리보기 상태예요 (주소: <b>${url}</b>).<br><br>
+      이 파일을 깃허브(GitHub Pages) 등에 올려서 실제 https:// 주소가 생긴 뒤에 다시 "QR 띄우기"를 눌러주세요. 그러면 그 주소로 QR이 정상적으로 만들어져요.</p>`;
+    document.getElementById('qr-modal-bg').classList.add('active');
+    return;
+  }
+  box.innerHTML = `
+    <h2 style="font-family:'Gaegu'; color:var(--wine); font-size:26px;">여기로 접속하세요!</h2>
+    <img id="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=460x460&data=${encodeURIComponent(url)}" alt="QR 코드"
+      onerror="this.replaceWith(Object.assign(document.createElement('p'), {className:'qr-link', textContent:'QR 이미지를 불러오지 못했어요. 아래 주소를 직접 입력해주세요.'}))">
+    <div class="qr-link">${url}</div>`;
+  document.getElementById('qr-modal-bg').classList.add('active');
+}
+function closeQr(){ document.getElementById('qr-modal-bg').classList.remove('active'); }
+function closeQrIfBg(e){ if(e.target.id==='qr-modal-bg') closeQr(); }
+</script>
+</body>
+</html>
