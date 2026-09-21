@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>행복은 — 우리 반 시집서점</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <style>
@@ -25,11 +25,15 @@
   body{
     margin:0; background: var(--paper); color: var(--ink);
     font-family:'Gowun Dodum', sans-serif; min-height:100vh;
+    position:relative; overflow-x:hidden;
   }
-  .screen{ display:none; padding: 20px 18px 60px; max-width: 760px; margin:0 auto; }
+  .glow{ position:fixed; border-radius:50%; filter:blur(110px); pointer-events:none; z-index:0; }
+  .glow.g1{ width:460px; height:460px; top:-200px; right:-160px; background:var(--gold); opacity:.30; }
+  .glow.g2{ width:420px; height:420px; bottom:-200px; left:-160px; background:var(--wine); opacity:.16; }
+  .screen{ display:none; position:relative; z-index:1; padding: 20px 18px 60px; max-width: 760px; margin:0 auto; }
   .screen.active{ display:block; }
-  h1,h2,h3{ margin:0; }
-  .eyebrow{ font-size:13px; color: var(--wine); margin-bottom:6px; }
+  h1,h2,h3{ margin:0; font-family:'Jua'; }
+  .eyebrow{ font-size:13px; color: var(--wine); margin-bottom:6px; font-weight:700; }
   .lede{ color: var(--ink-soft); font-size:14px; line-height:1.6; margin-top:8px; }
 
   #status-banner{ display:none; position:sticky; top:0; z-index:100; padding:10px 16px; font-size:14px; text-align:center; font-weight:700; }
@@ -38,7 +42,13 @@
   #status-banner.ok{ background:#E4F3E9; color:var(--ok); }
   #status-banner.bad{ background:#FBE6E1; color:var(--bad); }
 
-  .card{ background:#fff; border:1px solid var(--line); border-left:4px solid var(--wine); padding:20px 18px; margin-top:18px; border-radius:4px; }
+  .sound-toggle{ position:fixed; top:14px; left:14px; z-index:190; width:42px; height:42px; border-radius:50%;
+    background:#fff; border:1px solid var(--line); display:none; align-items:center; justify-content:center; font-size:18px; cursor:pointer;
+    box-shadow:0 3px 8px rgba(0,0,0,.15); }
+  .sound-toggle.show{ display:flex; }
+
+  .card{ background:linear-gradient(160deg,#FFFFFF, #FBF6EC); border:1px solid var(--line); border-left:4px solid var(--wine); padding:20px 18px; margin-top:18px; border-radius:10px;
+    box-shadow: 0 8px 0 rgba(43,36,32,.05), 0 12px 20px rgba(43,36,32,.10); }
 
   input[type=text], input[type=tel]{
     width:100%; font-family:'Gowun Batang', serif; font-size:20px; letter-spacing:2px;
@@ -52,13 +62,22 @@
   .line-row span{ white-space:nowrap; color: var(--ink); }
   .line-row input{ flex:1; }
 
-  button{ font-family:'Gowun Dodum', sans-serif; font-weight:700; font-size:15px; padding:12px 20px; border:none; cursor:pointer; border-radius:8px; }
-  .btn-primary{ background: var(--wine); color:#fff; }
-  .btn-primary:hover{ background: var(--wine-deep); }
-  .btn-primary:disabled{ background:#C9BFAE; cursor:not-allowed; }
-  .btn-ghost{ background:transparent; color: var(--ink-soft); border:1px solid var(--line); }
+  button{ font-family:'Jua'; font-weight:400; font-size:15px; padding:12px 20px; border:none; cursor:pointer; border-radius:10px;
+    transition: transform .08s ease; }
+  .btn-primary{ background: linear-gradient(180deg, #A24A5C, var(--wine)); color:#fff;
+    box-shadow: 0 4px 0 var(--wine-deep), 0 7px 10px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.25); }
+  .btn-primary:hover{ background: linear-gradient(180deg, #A24A5C, var(--wine-deep)); }
+  .btn-primary:not(:disabled):active{ transform: translateY(3px); box-shadow: 0 1px 0 var(--wine-deep), 0 2px 4px rgba(0,0,0,.2); }
+  .btn-primary:disabled{ background:#C9BFAE; box-shadow:none; cursor:not-allowed; }
+  .btn-ghost{ background:linear-gradient(180deg,#fff,#F6F1E7); color: var(--ink-soft); border:1px solid var(--line);
+    box-shadow: 0 3px 0 rgba(43,36,32,.08), 0 4px 8px rgba(43,36,32,.08); }
   .btn-ghost:hover{ border-color: var(--ink-soft); }
-  .btn-danger{ background:#fff; color:var(--bad); border:1px solid var(--bad); }
+  .btn-ghost:active{ transform: translateY(2px); box-shadow:none; }
+  .btn-danger{ background:linear-gradient(180deg,#fff,#FCEFEC); color:var(--bad); border:1px solid var(--bad);
+    box-shadow: 0 3px 0 rgba(179,73,47,.15); }
+  .btn-clover{ background:linear-gradient(180deg,#F6FFE8,#E3FAC2); color:#3F8A5C; border:1px solid #B6E88A;
+    box-shadow: 0 3px 0 rgba(143,219,26,.25); }
+  .btn-clover:disabled{ background:#eee; color:#aaa; border-color:#ddd; box-shadow:none; cursor:not-allowed; }
   .actions{ display:flex; gap:12px; margin-top:22px; flex-wrap:wrap; }
 
   .gallery-tabs{ display:flex; gap:8px; margin-top:18px; flex-wrap:wrap; }
@@ -73,47 +92,68 @@
 
   /* 시집 펼침면 */
   .book-wrap{ display:flex; justify-content:center; margin-top:22px; }
-  .book-spread{ width: min(94vw, 680px); min-height:340px; display:grid; grid-template-columns:1fr 1fr; background:#fffdf9; border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 0 rgba(43,36,32,.05), 0 10px 24px rgba(43,36,32,.08); overflow:hidden; }
+  .book-spread{ position:relative; width: min(94vw, 680px); min-height:340px; display:grid; grid-template-columns:1fr 1fr;
+    background:#fffdf9; border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 4px 0 rgba(43,36,32,.05), 0 18px 30px rgba(43,36,32,.16); overflow:hidden; }
+  .book-spread::before{ content:''; position:absolute; top:0; bottom:0; left:50%; width:18px; margin-left:-9px;
+    background:linear-gradient(90deg, rgba(0,0,0,.10), rgba(0,0,0,0) 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,.10));
+    pointer-events:none; z-index:2; }
   .book-left{ padding:30px 28px; border-right:1px dashed var(--line); display:flex; flex-direction:column; }
-  .book-title{ font-family:'Gaegu', sans-serif; font-weight:700; font-size:30px; color:var(--wine); text-align:left; }
-  .book-author{ font-family:'Gowun Dodum'; font-size:14px; color:var(--ink-soft); text-align:right; margin-top:8px; padding-bottom:14px; border-bottom:1px dashed var(--line); }
+  .book-title{ font-family:'Jua'; font-size:32px; color:var(--wine); text-align:left; }
+  .book-author{ font-family:'Gowun Dodum'; font-size:14px; color:var(--ink-soft); text-align:right; margin-top:8px; padding-bottom:14px; border-bottom:1px dashed var(--line); min-height:1px; }
   .book-poem{ margin-top:22px; flex:1; display:flex; flex-direction:column; justify-content:center; }
   .stanza{ font-family:'Gowun Batang', serif; font-size:17px; color:var(--ink); text-align:center; margin-bottom:18px; line-height:1.5; }
   .book-right{ background: var(--paper-deep); display:flex; align-items:center; justify-content:center; padding:16px; }
   .book-right img{ max-width:100%; max-height:100%; object-fit:contain; display:block; }
   @media (max-width:560px){
     .book-spread{ grid-template-columns:1fr; }
+    .book-spread::before{ display:none; }
     .book-left{ border-right:none; border-bottom:1px dashed var(--line); }
     .book-right{ min-height:220px; }
+  }
+  /* 넓은 화면(교사용 컴퓨터)에서는 시집을 훨씬 크게 */
+  @media (min-width: 1000px){
+    #modal-bg .modal-inner{ max-width: 980px; }
+    #modal-bg .book-spread{ width: min(88vw, 980px); min-height:440px; }
+    #modal-bg .book-title{ font-size:44px; }
+    #modal-bg .stanza{ font-size:23px; margin-bottom:22px; }
+    #modal-bg .book-author{ font-size:17px; }
+    #modal-bg .art-credit{ font-size:13px; }
   }
   .art-credit{ font-size:11px; color: var(--ink-soft); margin-top:10px; text-align:center; }
 
   /* 로그인 */
-  .code-confirm-name{ font-family:'Gaegu'; font-size:34px; color:var(--wine); text-align:center; margin:18px 0 4px; }
+  .code-confirm-name{ font-family:'Jua'; font-size:34px; color:var(--wine); text-align:center; margin:18px 0 4px; }
 
   /* 서점 (책장) */
   .store-header{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; }
-  .shelf-wrap{ margin-top:22px; background:#EFDFC4; border-radius:10px; padding:18px 16px 6px; }
+  .shelf-wrap{ margin-top:22px; background:linear-gradient(180deg,#EDDCB6,#D9BC85 60%,#C7A468); border-radius:10px; padding:18px 16px 6px;
+    box-shadow: inset 0 3px 8px rgba(0,0,0,.16), inset 0 -2px 0 rgba(255,255,255,.25), 0 10px 20px rgba(80,55,20,.18); }
   .shelf-grid{
     display:grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
     grid-auto-rows: 208px; column-gap:8px;
-    background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 186px, #C9A877 186px, #B8926A 200px, transparent 200px, transparent 208px);
+    background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 186px, #C9A877 186px, #7C5A2E 200px, transparent 200px, transparent 208px);
   }
   .spine{
     align-self:end; height:186px; border-radius:6px 6px 3px 3px; cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
-    padding:12px 4px; box-shadow: inset -6px 0 10px rgba(0,0,0,0.12), 0 3px 4px rgba(0,0,0,0.15);
-    position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:12px 4px;
+    box-shadow: inset 4px 0 8px rgba(255,255,255,0.22), inset -8px 0 14px rgba(0,0,0,0.22), 0 4px 6px rgba(0,0,0,0.25);
+    position:relative; transition: transform .12s ease, box-shadow .12s ease;
   }
-  .spine .spine-title{ font-family:'Gaegu'; font-weight:700; font-size:15px; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.15); }
-  .spine .spine-name{ font-family:'Gowun Dodum'; font-size:11px; color:rgba(255,255,255,0.92); margin-top:8px; text-align:center; word-break:keep-all; }
-  .spine .spine-badge{ position:absolute; top:6px; right:6px; font-size:10px; background:rgba(255,255,255,0.85); color:var(--wine-deep); border-radius:8px; padding:1px 5px; font-weight:700; }
+  .spine:hover, .spine:active{ transform: translateY(-8px);
+    box-shadow: inset 4px 0 8px rgba(255,255,255,0.22), inset -8px 0 14px rgba(0,0,0,0.22), 0 12px 16px rgba(0,0,0,0.3); }
+  .spine .spine-title{ font-family:'Jua'; font-size:14px; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.2); }
+  .spine .spine-num{ font-family:'Jua'; font-size:28px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25); margin-top:2px; }
+  .spine .spine-badge{ position:absolute; top:6px; right:6px; font-size:10px; background:rgba(255,255,255,0.9); color:var(--wine-deep); border-radius:8px; padding:1px 5px; font-weight:700; }
+  .spine .spine-clover{ position:absolute; bottom:6px; font-size:10.5px; background:rgba(255,255,255,.88); color:#3F8A5C; border-radius:8px; padding:1px 6px; font-weight:700; }
   .empty-note{ color: var(--ink-soft); font-size:14px; margin-top:18px; }
 
   .modal-bg{ display:none; position:fixed; inset:0; background:rgba(20,16,13,0.6); align-items:center; justify-content:center; padding:20px; z-index:50; }
   .modal-bg.active{ display:flex; }
-  .modal-inner{ max-width:420px; width:100%; max-height:90vh; overflow:auto; text-align:center; }
+  .modal-inner{ max-width:420px; width:100%; max-height:90vh; overflow:auto; text-align:center; animation:modalPop .22s ease; }
   .modal-inner.wide{ max-width:720px; }
+  @keyframes modalPop{ from{ transform:scale(.92); opacity:0; } to{ transform:scale(1); opacity:1; } }
   .modal-close{ margin-top:14px; }
   .modal-x-close{ position:fixed; top:18px; right:18px; width:42px; height:42px; border-radius:50%; background:#fff; border:1px solid var(--line); font-size:20px; line-height:1; cursor:pointer; z-index:60; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
   .qr-box{ background:#fff; border-radius:12px; padding:24px; }
@@ -121,25 +161,33 @@
   .qr-link{ font-size:12px; color:var(--ink-soft); word-break:break-all; margin-top:10px; }
 
   .top-nav{ display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
-  .link-btn{ background:none; border:none; color: var(--ink-soft); font-size:13px; cursor:pointer; text-decoration:underline; padding:0; }
+  .link-btn{ background:none; border:none; color: var(--ink-soft); font-size:13px; cursor:pointer; text-decoration:underline; padding:0; font-family:'Gowun Dodum'; }
   .step-indicator{ font-size:12px; color: var(--ink-soft); }
 
   .mybooks{ margin-top:16px; }
   .mybook-row{ display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 14px; margin-bottom:8px; }
-  .mybook-row .t{ font-family:'Gaegu'; font-weight:700; color:var(--wine); }
+  .mybook-row .t{ font-family:'Jua'; color:var(--wine); }
 
   .presence-wrap{ margin-top:16px; }
   .presence-chip{ display:inline-block; background:#E4F3E9; color:var(--ok); border-radius:14px; padding:5px 12px; font-size:13px; margin:0 6px 6px 0; }
+
+  .clover-badge{ position:fixed; top:14px; right:14px; z-index:190; background:#fff; border-radius:20px; padding:8px 16px;
+    font-weight:700; color:#3F8A5C; font-size:16px; box-shadow:0 3px 8px rgba(0,0,0,.15); display:none; align-items:center; gap:6px; }
+  .clover-badge.show{ display:flex; }
 </style>
 </head>
 <body>
+<div class="glow g1"></div><div class="glow g2"></div>
+<button class="sound-toggle" id="sound-toggle" onclick="toggleMusic()">🔊</button>
+<div class="clover-badge" id="clover-badge">🍀 <span id="clover-count">0</span></div>
+
 
 <div id="status-banner"></div>
 
 <!-- 0. 접속코드 입력 -->
 <div class="screen active" id="screen-code">
   <div class="eyebrow">국어 · 시와 이야기로 표현해요</div>
-  <h1 style="font-family:'Gaegu'; font-size:36px; color:var(--wine);">행복은</h1>
+  <h1 style="font-family:'Jua'; font-size:36px; color:var(--wine);">행복은</h1>
   <p class="lede">선생님이 알려주신 접속코드를 입력해주세요.</p>
   <div class="card">
     <input type="tel" id="input-code" placeholder="0000" maxlength="4" inputmode="numeric">
@@ -168,7 +216,7 @@
     <span class="step-indicator" id="landing-greeting"></span>
     <button class="link-btn" onclick="logout()">로그아웃</button>
   </div>
-  <h1 style="font-family:'Gaegu'; font-size:32px; color:var(--wine); margin-top:8px;">행복은</h1>
+  <h1 style="font-family:'Jua'; font-size:32px; color:var(--wine); margin-top:8px;">행복은</h1>
   <p class="lede">나태주 시인의 「사랑은」을 빌려, 나만의 "행복은"을 완성해봐요.</p>
 
   <div class="card" id="landing-card">
@@ -182,8 +230,8 @@
     <span class="step-indicator">1 / 3 · 행복은</span>
     <button class="link-btn" onclick="showScreen('screen-landing')">처음으로</button>
   </div>
-  <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">행복은 ( )</h2>
-  <p class="lede">마음에 드는 표현을 3개 이상 적어보세요.</p>
+  <h2 style="font-family:'Jua'; font-size:24px; margin-top:8px; color:var(--wine);">행복은 ( )</h2>
+  <p class="lede">마음에 드는 표현을 3개 이상 적어보세요. 나태주 시인의 「사랑은」처럼, 최대 7개까지 늘릴 수 있어요.</p>
   <div class="card" style="border-left-color:var(--gold); background:#FFF8E8;">
     <p style="margin:0; font-size:14px; color:var(--ink-soft);">💡 <b>힌트</b> — 날씨 · 온도 · 색깔 · 계절 · 소리 · 촉감 · 동물 · 장소 · 사람 · 물건 · 순간 등 뭐든 괜찮아요. (예: 행복은 천둥번개)</p>
   </div>
@@ -202,7 +250,7 @@
     <span class="step-indicator">2 / 3 · 그림 고르기</span>
     <button class="link-btn" onclick="showScreen('screen-write')">이전으로</button>
   </div>
-  <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">내 행복과 어울리는 그림은?</h2>
+  <h2 style="font-family:'Jua'; font-size:24px; margin-top:8px; color:var(--wine);">내 행복과 어울리는 그림은?</h2>
   <p class="lede">전시관을 골라, 그림을 눌러 크게 살펴본 뒤 골라보세요.</p>
   <div class="card" style="border-left-color:var(--gold); background:#FFF8E8;">
     <p style="margin:0; font-size:14px; color:var(--ink-soft);">💡 예쁜 그림이 아니라, <b>내가 쓴 행복의 느낌과 어울리는 그림</b>을 골라보세요. 색깔이나 분위기, 그림 속 장면이 내 시와 통하는 부분이 있는지 살펴보세요.</p>
@@ -219,7 +267,7 @@
   <button class="modal-x-close" onclick="closeArtPreview()" aria-label="닫기">✕</button>
   <div class="modal-inner wide">
     <div class="card" style="text-align:left;">
-      <h3 style="font-family:'Gaegu'; color:var(--wine); font-size:22px; margin-bottom:10px;" id="art-preview-title"></h3>
+      <h3 style="font-family:'Jua'; color:var(--wine); font-size:22px; margin-bottom:10px;" id="art-preview-title"></h3>
       <img id="art-preview-img" src="" alt="" style="width:100%; max-height:52vh; object-fit:contain; background:var(--paper-deep); border-radius:8px;">
       <div id="art-preview-poem" style="margin-top:16px; text-align:center;"></div>
       <p class="lede" style="text-align:center; margin-top:12px;">이 그림, 내가 쓴 행복과 어울리나요?</p>
@@ -237,7 +285,7 @@
     <span class="step-indicator">3 / 3 · 시집 완성</span>
     <button class="link-btn" onclick="showScreen('screen-gallery')">이전으로</button>
   </div>
-  <h2 style="font-family:'Gaegu'; font-size:24px; margin-top:8px; color:var(--wine);">이렇게 시집이 완성돼요</h2>
+  <h2 style="font-family:'Jua'; font-size:24px; margin-top:8px; color:var(--wine);">이렇게 시집이 완성돼요</h2>
   <div id="preview-book"></div>
   <div class="actions" style="justify-content:center;">
     <button class="btn-ghost" onclick="showScreen('screen-write')">다시 쓰기</button>
@@ -250,11 +298,12 @@
   <div class="store-header">
     <div>
       <div class="eyebrow">우리 반 시집서점</div>
-      <h1 style="font-family:'Gaegu'; font-size:28px; color:var(--wine);">함께 쓴 「행복은」</h1>
+      <h1 style="font-family:'Jua'; font-size:28px; color:var(--wine);">함께 쓴 「행복은」</h1>
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
       <button class="btn-ghost" onclick="showQR()">📱 QR 띄우기</button>
       <button class="btn-ghost" onclick="loadStore()">새로고침</button>
+      <button class="btn-danger" id="reset-clover-btn" style="display:none;" onclick="askResetClover()">🍀 초기화</button>
       <button class="btn-primary" onclick="showScreen('screen-landing')">내 화면으로</button>
     </div>
   </div>
@@ -267,7 +316,7 @@
 <!-- 상세보기 모달 -->
 <div class="modal-bg" id="modal-bg" onclick="closeModalIfBg(event)">
   <button class="modal-x-close" onclick="closeModal()" aria-label="닫기">✕</button>
-  <div class="modal-inner">
+  <div class="modal-inner wide">
     <div id="modal-book"></div>
     <div id="modal-actions" class="actions" style="justify-content:center;"></div>
     <div style="text-align:center;">
@@ -280,7 +329,7 @@
 <div class="modal-bg" id="qr-modal-bg" onclick="closeQrIfBg(event)">
   <div class="modal-inner">
     <div class="qr-box">
-      <h2 style="font-family:'Gaegu'; color:var(--wine); font-size:26px;">여기로 접속하세요!</h2>
+      <h2 style="font-family:'Jua'; color:var(--wine); font-size:26px;">여기로 접속하세요!</h2>
       <img id="qr-img" src="" alt="QR 코드">
       <div class="qr-link" id="qr-link"></div>
     </div>
@@ -302,6 +351,10 @@
     </div>
   </div>
 </div>
+
+<!-- 배경음악 (교사 화면에서만 재생) -->
+<audio id="bgmArabesque" src="music/arabesque.mp3" preload="auto" loop></audio>
+<audio id="bgmNocturne" src="music/nocturne.mp3" preload="auto" loop></audio>
 
 <script>
 // ---------- Firebase 초기화 ----------
@@ -388,10 +441,19 @@ function artUrl(work, width){
   return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${width||900}`;
 }
 const SPINE_COLORS = ["#C1585F","#4F7CA6","#5C9C6E","#B8894A","#8C6BB1","#4A9C9C","#C67A9E","#7A8B4A"];
+function shade(hex, pct){
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n>>16)&255, g=(n>>8)&255, b=n&255;
+  r = Math.min(255, Math.max(0, Math.round(r + (pct<0? r : 255-r) * pct)));
+  g = Math.min(255, Math.max(0, Math.round(g + (pct<0? g : 255-g) * pct)));
+  b = Math.min(255, Math.max(0, Math.round(b + (pct<0? b : 255-b) * pct)));
+  return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
 function spineColorFor(id){
   let h = 0;
   for(const ch of String(id)) h = (h*31 + ch.charCodeAt(0)) % 100000;
-  return SPINE_COLORS[h % SPINE_COLORS.length];
+  const base = SPINE_COLORS[h % SPINE_COLORS.length];
+  return `linear-gradient(115deg, ${shade(base,0.28)} 0%, ${base} 35%, ${shade(base,-0.22)} 100%)`;
 }
 
 // ---------- 세션/상태 ----------
@@ -420,6 +482,13 @@ function confirmYes(){
   session = { code, name: CODES[code], isTeacher: code === TEACHER_CODE };
   document.getElementById('input-code').value = '';
   startHeartbeat();
+  if(session.isTeacher){
+    document.getElementById('sound-toggle').classList.add('show');
+    startArabesque();
+  }else{
+    document.getElementById('clover-badge').classList.add('show');
+    refreshCloverBadge();
+  }
   renderLanding();
   showScreen('screen-landing');
 }
@@ -433,7 +502,46 @@ function logout(){
   if(window._heartbeatTimer){ clearInterval(window._heartbeatTimer); window._heartbeatTimer = null; }
   if(window._presenceRecheck){ clearInterval(window._presenceRecheck); window._presenceRecheck = null; }
   if(hasStorage()) db.ref('presence').off();
+  stopAllMusic();
+  document.getElementById('sound-toggle').classList.remove('show');
+  document.getElementById('clover-badge').classList.remove('show');
   showScreen('screen-code');
+}
+
+// ---------- 배경음악 (교사 화면 전용) ----------
+let soundOn = true;
+function toggleMusic(){
+  soundOn = !soundOn;
+  document.getElementById('sound-toggle').textContent = soundOn ? '🔊' : '🔇';
+  if(!soundOn) stopAllMusic();
+  else if(session && session.isTeacher) startArabesque();
+}
+function playTrack(a, vol){ if(!soundOn) return; try{ a.volume = vol!=null?vol:0.35; a.currentTime = a.currentTime||0; a.play().catch(()=>{}); }catch(e){} }
+function stopTrack(a){ try{ a.pause(); }catch(e){} }
+function startArabesque(){
+  if(!session || !session.isTeacher) return;
+  const noc = document.getElementById('bgmNocturne');
+  stopTrack(noc);
+  playTrack(document.getElementById('bgmArabesque'), 0.28);
+}
+function playNocturne(){
+  if(!session || !session.isTeacher) return;
+  stopTrack(document.getElementById('bgmArabesque'));
+  const noc = document.getElementById('bgmNocturne');
+  noc.currentTime = 0;
+  playTrack(noc, 0.38);
+}
+function stopAllMusic(){
+  stopTrack(document.getElementById('bgmArabesque'));
+  stopTrack(document.getElementById('bgmNocturne'));
+}
+
+// ---------- 클로버 지갑 (학생 전용 표시) ----------
+function refreshCloverBadge(){
+  if(!hasStorage() || !session) return;
+  const ref = db.ref('wallet/' + session.code);
+  ref.off();
+  ref.on('value', snap=>{ document.getElementById('clover-count').textContent = Number(snap.val())||0; });
 }
 
 // ---------- 실시간 접속 표시 (heartbeat) ----------
@@ -508,7 +616,7 @@ async function renderLanding(){
   if(myBooks.length > 0){
     html += `<h3 style="font-size:16px;">내 작품 (${myBooks.length}/2)</h3><div class="mybooks">`;
     myBooks.forEach(entry=>{
-      html += `<div class="mybook-row"><span class="t">행복은 — ${entry.name}</span>
+      html += `<div class="mybook-row"><span class="t">행복은 ${entry.orderNum!=null?entry.orderNum:''} — ${entry.name}</span>
         <button class="btn-ghost" onclick='startEdit(${JSON.stringify(entry.id)})'>수정</button></div>`;
     });
     html += `</div>`;
@@ -562,9 +670,9 @@ function renderLines(){
   wrap.querySelectorAll('input').forEach(inp=>{
     inp.addEventListener('input', e=>{ state.lines[+e.target.dataset.idx] = e.target.value; });
   });
-  document.getElementById('add-line-btn').style.display = state.lines.length >= 4 ? 'none' : 'inline-block';
+  document.getElementById('add-line-btn').style.display = state.lines.length >= 7 ? 'none' : 'inline-block';
 }
-function addLine(){ if(state.lines.length>=4) return; state.lines.push(''); renderLines(); }
+function addLine(){ if(state.lines.length>=7) return; state.lines.push(''); renderLines(); }
 
 function goToGallery(){
   const filled = state.lines.map(l=>l.trim()).filter(Boolean);
@@ -623,24 +731,25 @@ function closeArtPreview(){ document.getElementById('art-preview-bg').classList.
 function closeArtPreviewIfBg(e){ if(e.target.id==='art-preview-bg') closeArtPreview(); }
 
 // ---------- 4. 시집 렌더/등록 ----------
-function bookHtml(entry){
+function bookHtml(entry, revealName){
   const imgUrl = artUrl(entry.art, 900);
+  const showName = revealName;
   return `
     <div class="book-wrap">
       <div class="book-spread">
         <div class="book-left">
-          <div class="book-title">행복은</div>
-          <div class="book-author">${entry.name}</div>
+          <div class="book-title">행복은 ${entry.orderNum!=null ? entry.orderNum : ''}</div>
+          <div class="book-author">${showName ? entry.name : ''}</div>
           <div class="book-poem">${entry.lines.map(l=>`<div class="stanza">행복은 ${l}</div>`).join('')}</div>
         </div>
         <div class="book-right"><img src="${imgUrl}" alt="${entry.art.title}"></div>
       </div>
     </div>
-    <div class="art-credit">🎨 ${entry.art.artist.replace('관','')} · ${entry.art.title}${entry.art.year? ' ('+entry.art.year+')' : ''} — ${entry.art.local? '학급 제공 이미지' : 'Public Domain, Wikimedia Commons'}</div>
+    <div class="art-credit">🎨 ${entry.art.artist.replace('관','')} · ${entry.art.title}${entry.art.year? ' ('+entry.art.year+')' : ''} — ${entry.art.local? '학급 제공 이미지' : 'Public Domain, Wikimedia Commons'} ${entry.clovers? ' · 🍀 '+entry.clovers : ''}</div>
   `;
 }
 function goToPreview(){
-  document.getElementById('preview-book').innerHTML = bookHtml({name: state.name, lines: state.lines, art: state.selected});
+  document.getElementById('preview-book').innerHTML = bookHtml({name: state.name, lines: state.lines, art: state.selected}, true);
   document.getElementById('register-btn').textContent = state.editingId ? '수정 완료' : '등록하고 서점 열기';
   showScreen('screen-preview');
 }
@@ -653,13 +762,20 @@ async function registerBook(){
   try{
     const id = state.editingId || (Date.now() + '_' + Math.random().toString(36).slice(2,7));
     let originalTs = Date.now();
+    let orderNum = null;
     if(state.editingId){
       const prev = await fetchBookById(id);
       if(prev && prev.ts) originalTs = prev.ts;
+      if(prev && prev.orderNum != null) orderNum = prev.orderNum;
+    }
+    if(orderNum == null){
+      const res = await db.ref('meta/bookCounter').transaction(cur => (cur||0) + 1);
+      orderNum = res.snapshot.val();
     }
     const entry = {
       id, name: state.name, code: session.code,
       lines: state.lines, art: state.selected,
+      orderNum,
       ts: originalTs,
       updatedTs: Date.now()
     };
@@ -679,6 +795,7 @@ async function registerBook(){
 // ---------- 5. 서점 (책장) ----------
 function goToStore(){
   showScreen('screen-store');
+  document.getElementById('reset-clover-btn').style.display = (session && session.isTeacher) ? 'inline-block' : 'none';
   attachStoreListener();
 }
 
@@ -714,7 +831,7 @@ function renderShelf(all){
     return;
   }
   emptyNote.style.display = 'none';
-  entries.sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  entries.sort((a,b)=>(a.orderNum||0)-(b.orderNum||0));
   grid.innerHTML = '';
   entries.forEach(entry=>{
     const spine = document.createElement('div');
@@ -723,8 +840,9 @@ function renderShelf(all){
     const mine = session && !session.isTeacher && entry.code === session.code;
     spine.innerHTML = `
       <div class="spine-title">행복은</div>
-      <div class="spine-name">${entry.name}</div>
+      <div class="spine-num">${entry.orderNum!=null? entry.orderNum : '·'}</div>
       ${mine ? '<div class="spine-badge">내 작품</div>' : ''}
+      ${entry.clovers ? `<div class="spine-clover">🍀 ${entry.clovers}</div>` : ''}
     `;
     spine.onclick = ()=> openModal(entry);
     grid.appendChild(spine);
@@ -732,10 +850,11 @@ function renderShelf(all){
 }
 
 function openModal(entry){
-  document.getElementById('modal-book').innerHTML = bookHtml(entry);
+  const isOwner = session && entry.code === session.code;
+  document.getElementById('modal-book').innerHTML = bookHtml(entry, isOwner);
   const actionsEl = document.getElementById('modal-actions');
   actionsEl.innerHTML = '';
-  const canEdit = session && (session.isTeacher || entry.code === session.code);
+  const canEdit = session && (session.isTeacher || isOwner);
   if(canEdit){
     const editBtn = document.createElement('button');
     editBtn.className = 'btn-primary';
@@ -744,20 +863,79 @@ function openModal(entry){
     actionsEl.appendChild(editBtn);
   }
   if(session && session.isTeacher){
+    const revealBtn = document.createElement('button');
+    revealBtn.className = 'btn-ghost';
+    revealBtn.textContent = '👁 이름 보기';
+    revealBtn.onclick = ()=>{
+      document.getElementById('modal-book').innerHTML = bookHtml(entry, true);
+      revealBtn.disabled = true;
+      revealBtn.textContent = `👁 ${entry.name}`;
+    };
+    actionsEl.appendChild(revealBtn);
     const delBtn = document.createElement('button');
     delBtn.className = 'btn-danger';
     delBtn.textContent = '삭제하기';
     delBtn.onclick = ()=> askDelete(entry);
     actionsEl.appendChild(delBtn);
+    playNocturne();
+  }else if(session && !isOwner){
+    const cloverBtn = document.createElement('button');
+    cloverBtn.className = 'btn-clover';
+    cloverBtn.textContent = '🍀 클로버 주기';
+    cloverBtn.onclick = ()=> giveClover(entry, cloverBtn);
+    actionsEl.appendChild(cloverBtn);
+    checkCloverButtonState(entry, cloverBtn);
   }
   document.getElementById('modal-bg').classList.add('active');
+}
+async function checkCloverButtonState(entry, btn){
+  if(!hasStorage() || !session) return;
+  try{
+    const givenKey = session.code + '_' + entry.id;
+    const givenSnap = await db.ref('given/' + givenKey).once('value');
+    if(givenSnap.val()){ btn.disabled = true; btn.textContent = '🍀 이미 줬어요'; return; }
+    const walletSnap = await db.ref('wallet/' + session.code).once('value');
+    const bal = Number(walletSnap.val()) || 0;
+    if(bal < 1){ btn.disabled = true; btn.textContent = '🍀 클로버가 없어요'; }
+  }catch(e){ console.error(e); }
+}
+async function giveClover(entry, btn){
+  if(!hasStorage() || !session) return;
+  btn.disabled = true;
+  try{
+    const givenKey = session.code + '_' + entry.id;
+    const givenRef = db.ref('given/' + givenKey);
+    const already = (await givenRef.once('value')).val();
+    if(already){ btn.textContent = '🍀 이미 줬어요'; return; }
+    const walletRef = db.ref('wallet/' + session.code);
+    const walletRes = await walletRef.transaction(cur => {
+      const bal = Number(cur)||0;
+      if(bal < 1) return; // undefined 반환 = 트랜잭션 취소
+      return bal - 1;
+    });
+    if(!walletRes.committed){
+      btn.textContent = '🍀 클로버가 없어요';
+      return;
+    }
+    await givenRef.set(true);
+    await db.ref('books/' + entry.id + '/clovers').transaction(cur => (cur||0) + 1);
+    btn.textContent = '🍀 전달 완료!';
+    showStatus('클로버를 전달했어요!', 'ok', 2000);
+  }catch(e){
+    console.error(e);
+    btn.disabled = false;
+    showStatus('클로버 전달 중 오류가 발생했어요.', 'bad');
+  }
 }
 function startEditFromStore(entry){
   state = { name: entry.name, lines: entry.lines.slice(), gallery: guessGalleryKey(entry.art), selected: entry.art, editingId: entry.id };
   renderLines();
   showScreen('screen-write');
 }
-function closeModal(){ document.getElementById('modal-bg').classList.remove('active'); }
+function closeModal(){
+  document.getElementById('modal-bg').classList.remove('active');
+  if(session && session.isTeacher) startArabesque();
+}
 function closeModalIfBg(e){ if(e.target.id==='modal-bg') closeModal(); }
 
 // ---------- 삭제 확인 (커스텀 모달, confirm() 미사용) ----------
@@ -779,6 +957,31 @@ function askDelete(entry){
 }
 function closeConfirmModal(){ document.getElementById('confirm-modal-bg').classList.remove('active'); }
 
+// ---------- 클로버 초기화 (교사 전용) ----------
+function askResetClover(){
+  document.getElementById('confirm-modal-text').textContent = '클로버 지갑과 후원 기록, 접속 현황을 모두 초기화할까요? (학생들이 쓴 시는 그대로 남아요)';
+  const yesBtn = document.getElementById('confirm-modal-yes');
+  yesBtn.onclick = async ()=>{
+    closeConfirmModal();
+    showStatus('초기화하는 중...', 'info');
+    try{
+      await db.ref('wallet').remove();
+      await db.ref('given').remove();
+      await db.ref('presence').remove();
+      const snap = await db.ref('books').once('value');
+      const all = snap.val() || {};
+      const updates = {};
+      Object.keys(all).forEach(id => { updates['books/'+id+'/clovers'] = null; });
+      if(Object.keys(updates).length) await db.ref().update(updates);
+      showStatus('클로버 초기화 완료!', 'ok', 2500);
+    }catch(e){
+      console.error(e);
+      showStatus('초기화 중 오류가 발생했어요.', 'bad');
+    }
+  };
+  document.getElementById('confirm-modal-bg').classList.add('active');
+}
+
 // ---------- QR ----------
 function showQR(){
   const url = window.location.href;
@@ -786,14 +989,14 @@ function showQR(){
   const box = document.querySelector('#qr-modal-bg .qr-box');
   if(!isRealUrl){
     box.innerHTML = `
-      <h2 style="font-family:'Gaegu'; color:var(--wine); font-size:24px;">아직은 QR을 만들 수 없어요</h2>
+      <h2 style="font-family:'Jua'; color:var(--wine); font-size:24px;">아직은 QR을 만들 수 없어요</h2>
       <p class="lede" style="text-align:left;">지금 이 화면은 실제 인터넷 주소가 없는 미리보기 상태예요 (주소: <b>${url}</b>).<br><br>
       이 파일을 깃허브(GitHub Pages) 등에 올려서 실제 https:// 주소가 생긴 뒤에 다시 "QR 띄우기"를 눌러주세요. 그러면 그 주소로 QR이 정상적으로 만들어져요.</p>`;
     document.getElementById('qr-modal-bg').classList.add('active');
     return;
   }
   box.innerHTML = `
-    <h2 style="font-family:'Gaegu'; color:var(--wine); font-size:26px;">여기로 접속하세요!</h2>
+    <h2 style="font-family:'Jua'; color:var(--wine); font-size:26px;">여기로 접속하세요!</h2>
     <img id="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=460x460&data=${encodeURIComponent(url)}" alt="QR 코드"
       onerror="this.replaceWith(Object.assign(document.createElement('p'), {className:'qr-link', textContent:'QR 이미지를 불러오지 못했어요. 아래 주소를 직접 입력해주세요.'}))">
     <div class="qr-link">${url}</div>`;
