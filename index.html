@@ -318,7 +318,6 @@
   <button class="modal-x-close" onclick="closeModal()" aria-label="닫기">✕</button>
   <div class="modal-inner wide">
     <div id="modal-book"></div>
-    <div id="modal-comments" style="margin-top:6px;"></div>
     <div id="modal-actions" class="actions" style="justify-content:center;"></div>
     <div style="text-align:center;">
       <button class="btn-ghost modal-close" onclick="closeModal()">닫기</button>
@@ -892,52 +891,7 @@ function openModal(entry){
     actionsEl.appendChild(cloverBtn);
     checkCloverButtonState(entry, cloverBtn);
   }
-  attachCommentSection(entry);
   document.getElementById('modal-bg').classList.add('active');
-}
-function attachCommentSection(entry){
-  const box = document.getElementById('modal-comments');
-  box.innerHTML = `<button class="btn-ghost" id="comment-toggle-btn" style="font-size:13px;">💬 감상평 보기</button><div id="comment-list" style="display:none; margin-top:10px; text-align:left;"></div>`;
-  const toggleBtn = document.getElementById('comment-toggle-btn');
-  const listEl = document.getElementById('comment-list');
-  toggleBtn.onclick = async ()=>{
-    const showing = listEl.style.display !== 'none';
-    if(showing){ listEl.style.display = 'none'; return; }
-    await renderCommentList(entry, listEl);
-    listEl.style.display = 'block';
-  };
-  refreshCommentCount(entry, toggleBtn);
-}
-async function renderCommentList(entry, listEl){
-  listEl.innerHTML = '불러오는 중...';
-  try{
-    const snap = await db.ref('comments/' + entry.id).once('value');
-    const all = snap.val() || {};
-    const arr = Object.entries(all).sort((a,b)=>a[1].ts-b[1].ts);
-    if(!arr.length){ listEl.innerHTML = '<div class="lede">아직 감상평이 없어요.</div>'; return; }
-    listEl.innerHTML = arr.map(([key, c])=>`
-      <div style="display:flex; align-items:flex-start; gap:8px; padding:8px 10px; background:#FBF6EC; border-radius:8px; margin-bottom:6px;">
-        <div style="flex:1; font-size:13px; color:var(--ink);">${c.favLine? `<b>${c.favLine}연이 좋아요</b>${c.text? ' · ' : ''}` : ''}${c.text || ''}</div>
-        ${session && session.isTeacher ? `<button class="link-btn" data-key="${key}" style="color:var(--bad); flex-shrink:0;" onclick="deleteComment('${entry.id}','${key}', this)">삭제</button>` : ''}
-      </div>`).join('');
-  }catch(e){ console.error(e); listEl.innerHTML = '<div class="lede">불러오지 못했어요.</div>'; }
-}
-async function deleteComment(bookId, key, btnEl){
-  try{
-    await db.ref('comments/' + bookId + '/' + key).remove();
-    const listEl = btnEl.closest('#comment-list') || document.getElementById('comment-list');
-    const entry = { id: bookId };
-    await renderCommentList(entry, listEl);
-    const toggleBtn = document.getElementById('comment-toggle-btn');
-    if(toggleBtn) refreshCommentCount(entry, toggleBtn);
-    showStatus('감상평을 삭제했어요.', 'ok', 1800);
-  }catch(e){ console.error(e); showStatus('삭제 중 오류가 발생했어요.', 'bad'); }
-}
-function refreshCommentCount(entry, toggleBtn){
-  db.ref('comments/' + entry.id).once('value').then(snap=>{
-    const n = snap.val() ? Object.keys(snap.val()).length : 0;
-    toggleBtn.textContent = n>0 ? `💬 감상평 보기 (${n})` : '💬 감상평 보기';
-  }).catch(()=>{});
 }
 async function checkCloverButtonState(entry, btn){
   if(!hasStorage() || !session) return;
@@ -972,40 +926,11 @@ async function giveClover(entry, btn){
     await db.ref('books/' + entry.id + '/clovers').transaction(cur => (cur||0) + 1);
     btn.textContent = '🍀 전달 완료!';
     showStatus('클로버를 전달했어요!', 'ok', 2000);
-    showCommentPrompt(entry, btn.parentElement);
   }catch(e){
     console.error(e);
     btn.disabled = false;
     showStatus('클로버 전달 중 오류가 발생했어요.', 'bad');
   }
-}
-function showCommentPrompt(entry, container){
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'width:100%; margin-top:12px; text-align:left; background:#FBF6EC; border-radius:10px; padding:14px;';
-  wrap.innerHTML = `
-    <p class="lede" style="margin:0 0 8px; color:var(--ink);">감상평을 남겨볼까요? (선택)</p>
-    <select id="fav-line-select" style="width:100%; padding:9px; border-radius:8px; border:1px solid var(--line); font-family:'Gowun Dodum'; margin-bottom:8px; background:#fff;">
-      <option value="">가장 좋았던 연 (선택 안 함)</option>
-      ${entry.lines.map((_,i)=>`<option value="${i+1}">${i+1}연이 좋아요</option>`).join('')}
-    </select>
-    <input id="comment-text-input" type="text" maxlength="30" placeholder="짧은 감상평, 30자 이내 (선택)"
-      style="width:100%; padding:9px; border-radius:8px; border:1px solid var(--line); font-family:'Gowun Dodum'; margin-bottom:10px; background:#fff;">
-    <div style="display:flex; gap:8px;">
-      <button class="btn-primary" id="comment-submit-btn" style="flex:1;">남기기</button>
-      <button class="btn-ghost" id="comment-skip-btn" style="flex:1;">건너뛰기</button>
-    </div>`;
-  container.appendChild(wrap);
-  document.getElementById('comment-submit-btn').onclick = async ()=>{
-    const favLine = document.getElementById('fav-line-select').value;
-    const text = document.getElementById('comment-text-input').value.trim().slice(0,30);
-    if(!favLine && !text){ wrap.remove(); return; }
-    try{
-      await db.ref('comments/' + entry.id).push({ favLine: favLine ? Number(favLine) : null, text, ts: Date.now() });
-      showStatus('감상평을 남겼어요. 고마워요!', 'ok', 2000);
-    }catch(e){ console.error(e); }
-    wrap.remove();
-  };
-  document.getElementById('comment-skip-btn').onclick = ()=> wrap.remove();
 }
 function startEditFromStore(entry){
   state = { name: entry.name, lines: entry.lines.slice(), gallery: guessGalleryKey(entry.art), selected: entry.art, editingId: entry.id };
@@ -1038,7 +963,7 @@ function closeConfirmModal(){ document.getElementById('confirm-modal-bg').classL
 
 // ---------- 클로버 초기화 (교사 전용) ----------
 function askResetClover(){
-  document.getElementById('confirm-modal-text').textContent = '클로버 지갑, 후원 기록, 감상평, 접속 현황을 모두 초기화할까요? (학생들이 쓴 시는 그대로 남아요)';
+  document.getElementById('confirm-modal-text').textContent = '클로버 지갑, 후원 기록, 접속 현황을 모두 초기화할까요? (학생들이 쓴 시는 그대로 남아요)';
   const yesBtn = document.getElementById('confirm-modal-yes');
   yesBtn.onclick = async ()=>{
     closeConfirmModal();
@@ -1047,7 +972,6 @@ function askResetClover(){
       await db.ref('wallet').remove();
       await db.ref('given').remove();
       await db.ref('presence').remove();
-      await db.ref('comments').remove();
       const snap = await db.ref('books').once('value');
       const all = snap.val() || {};
       const updates = {};
